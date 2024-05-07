@@ -1,8 +1,8 @@
 Hello {name},
 
-Thank you for registering at OurSite. Please click the following link to verify your email address:
+Thank you for registering at Ingen. Please click the following link to verify your email address:
 
 [Verify Email]({verification_url})
 
 Thanks,
-The OurSite Team
+The Ingen Team
