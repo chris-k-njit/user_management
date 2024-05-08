@@ -60,35 +60,26 @@ class UserService:
             
             validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
             
-            # Ensure nickname is unique
-            nickname = validated_data.get('nickname')
-            if not nickname or await cls.get_by_nickname(session, nickname):
-                validated_data['nickname'] = generate_nickname()
-                while await cls.get_by_nickname(session, validated_data['nickname']):
-                    validated_data['nickname'] = generate_nickname()
-
             new_user = User(**validated_data)
+            new_nickname = generate_nickname()
+            while await cls.get_by_nickname(session, new_nickname):
+                new_nickname = generate_nickname()
+            new_user.nickname = new_nickname
             logger.info(f"User Role: {new_user.role}")
             user_count = await cls.count(session)
-            new_user.role = UserRole.ADMIN if user_count == 0 else UserRole.ANONYMOUS
+            new_user.role = UserRole.ADMIN if user_count == 0 else UserRole.ANONYMOUS            
+            
+            if new_user.role == UserRole.ADMIN:
+                new_user.email_verified = True
 
+            new_user.verification_token = generate_verification_token() # Copmpletely missed on first glance, token couldn't be generated here due to IF/ELSE
+                
             session.add(new_user)
             await session.commit()
-
-            if new_user.role != UserRole.ADMIN:
-                new_user.verification_token = generate_verification_token()
-                await email_service.send_verification_email(new_user)
-            else:
-                new_user.email_verified = True
-                await session.commit()  # Ensure the user is committed as verified if Admin
-
+            await email_service.send_verification_email(new_user) # Error demonstrated by Professor for Final Project Intro video.
             return new_user
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
-            return None
-        except Exception as e:  # More specific exception handling might be needed here
-            logger.error(f"Unexpected error: {e}")
-            await session.rollback()
             return None
 
     @classmethod
