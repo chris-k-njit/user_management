@@ -175,6 +175,19 @@ async def test_login_user_incorrect_password(db_session, user):
     user = await UserService.login_user(db_session, user.email, "IncorrectPassword!")
     assert user is None
 
+# TEST 4 - See if there is any failure when registration sent
+# Test handling of service failure during email sending in registration
+async def test_registration_with_email_service_failure(db_session, faulty_email_service):
+    user_data = {
+        "nickname": generate_nickname(),
+        "email": "new_user_fail_email@example.com",
+        "password": "ValidPassword123!",
+        "role": UserRole.USER.name
+    }
+    with pytest.raises(Exception) as exc_info:
+        await UserService.register_user(db_session, user_data, faulty_email_service)
+    assert 'Email service failed' in str(exc_info.value)  # Custom error handling for email failure
+
 # Test account lock after maximum failed login attempts
 async def test_account_lock_after_failed_logins(db_session, verified_user):
     max_login_attempts = get_settings().max_login_attempts
