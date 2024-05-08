@@ -1,4 +1,5 @@
 from builtins import range
+from http.client import HTTPException
 import pytest
 from sqlalchemy import select
 from app.dependencies import get_settings
@@ -118,6 +119,13 @@ async def test_delete_user_does_not_exist(db_session):
     non_existent_user_id = "non-existent-id"
     deletion_success = await UserService.delete(db_session, non_existent_user_id)
     assert deletion_success is False
+
+# TEST 3 - Test unathuroized user deletion here.
+# Test deleting a user by an unauthorized role
+async def test_delete_user_unauthorized_role(db_session, user, unauthorized_user_session):
+    with pytest.raises(HTTPException) as exc_info:
+        await UserService.delete(unauthorized_user_session, user.id)
+    assert exc_info.value.status_code == 403  # Forbidden access
 
 # Test listing users with pagination
 async def test_list_users_with_pagination(db_session, users_with_same_role_50_users):
