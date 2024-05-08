@@ -9,11 +9,6 @@ on:
       - main
 
 jobs:
-  check-start:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check workflow start
-        run: echo "Workflow started successfully"
   test:
     runs-on: ubuntu-latest
     strategy:

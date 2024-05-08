@@ -12,4 +12,4 @@
 
 ## Screenshots Below
 [Chris' Dockerhub Final Project Repository](https://hub.docker.com/repository/docker/ck378/user_management/general)
-![Final Project Dockerhub repo screenshot](/Screenshots/dockerhub.png)
+![Final Project Dockerhub repo screenshot](/screenshots/dockerhub.png)
