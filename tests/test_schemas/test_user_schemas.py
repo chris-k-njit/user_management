@@ -1,5 +1,7 @@
+import asyncio
 import uuid
 import pytest
+from app.services.user_service import UserService
 from pydantic import ValidationError
 from datetime import datetime
 from app.schemas.user_schemas import UserBase, UserCreate, UserUpdate, UserResponse, UserListResponse, LoginRequest
@@ -129,3 +131,13 @@ def test_user_base_url_invalid(url, user_base_data):
     user_base_data["profile_picture_url"] = url
     with pytest.raises(ValidationError):
         UserBase(**user_base_data)
+
+# TEST 7 - Concurrency Tests (example concept, practical implementation would depend on your test setup and framework)
+def test_concurrent_user_creations(user_create_data, db_session):
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [executor.submit(asyncio.run, UserService.create(db_session, user_create_data, None)) for _ in range(10)]
+        results = [f.result() for f in futures]
+        # Verify all users are created without any data corruption or lost updates
+        assert all(result is not None for result in results)
+        assert len(set(user.email for user in results)) == 10  # assuming email should be unique and is adjusted in user_create_data
