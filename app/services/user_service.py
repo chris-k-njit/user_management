@@ -78,7 +78,6 @@ class UserService:
                 await email_service.send_verification_email(new_user)
             else:
                 new_user.email_verified = True
-                session.add(new_user)
                 await session.commit()
 
             return new_user
