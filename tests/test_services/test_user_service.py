@@ -76,6 +76,26 @@ async def test_get_by_email_user_does_not_exist(db_session):
     retrieved_user = await UserService.get_by_email(db_session, "non_existent_email@example.com")
     assert retrieved_user is None
 
+# TEST 2 - ensuring email is tested
+# Test case sensitivity for email during registration
+async def test_email_case_sensitivity(db_session, email_service):
+    user_data_lower = {
+        "nickname": generate_nickname(),
+        "email": "CaseTest@example.com".lower(),
+        "password": "CasePass123!",
+        "role": UserRole.USER.name
+    }
+    user_data_upper = {
+        "nickname": generate_nickname(),
+        "email": "CaseTest@example.com".upper(),
+        "password": "CasePass123!",
+        "role": UserRole.USER.name
+    }
+    user_lower = await UserService.create(db_session, user_data_lower, email_service)
+    user_upper = await UserService.create(db_session, user_data_upper, email_service)
+    assert user_lower is not None
+    assert user_upper is None  # Expecting the second call to fail due to duplicate email
+
 # Test updating a user with valid data
 async def test_update_user_valid_data(db_session, user):
     new_email = "updated_email@example.com"
