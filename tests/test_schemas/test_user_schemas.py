@@ -34,6 +34,17 @@ def user_update_data():
         "profile_picture_url": "https://example.com/profile_pictures/john_doe_updated.jpg"
     }
 
+# TEST 5 - Boundary Tests for User Fields
+@pytest.mark.parametrize("nickname", ["a"*50, "b"*2])  # Assuming 50 is max and 2 is min
+def test_user_nickname_boundaries(nickname, user_base_data):
+    user_base_data["nickname"] = nickname
+    if len(nickname) >= 3 and len(nickname) <= 50:
+        user = UserBase(**user_base_data)
+        assert user.nickname == nickname
+    else:
+        with pytest.raises(ValidationError):
+            UserBase(**user_base_data)
+
 @pytest.fixture
 def user_response_data(user_base_data):
     return {
