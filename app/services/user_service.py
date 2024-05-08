@@ -54,47 +54,46 @@ class UserService:
         try:
             validated_data = UserCreate(**user_data).model_dump()
             existing_user = await cls.get_by_email(session, validated_data['email'])
-            if existing_user:
-                logger.error("User with given email already exists.")
+            existing_nickname = await cls.get_by_nickname(session, validated_data.get('nickname'))
+
+            if existing_user or existing_nickname:
+                logger.error("User with given email or nickname already exists.")
                 return None
             
             validated_data['hashed_password'] = hash_password(validated_data.pop('password'))
-            
-            # Ensure nickname is unique
-            nickname = validated_data.get('nickname')
-            if not nickname or await cls.get_by_nickname(session, nickname):
-                validated_data['nickname'] = generate_nickname()
-                while await cls.get_by_nickname(session, validated_data['nickname']):
-                    validated_data['nickname'] = generate_nickname()
 
             new_user = User(**validated_data)
-            logger.info(f"User Role: {new_user.role}")
-            user_count = await cls.count(session)
-            new_user.role = UserRole.ADMIN if user_count == 0 else UserRole.ANONYMOUS
+            new_nickname = generate_nickname()
+            while await cls.get_by_nickname(session, new_nickname):
+                new_nickname = generate_nickname()
+            new_user.nickname = new_nickname
 
-            session.add(new_user)
-            await session.commit()
+            user_count = await cls.count(session)
+            new_user.role = UserRole.ADMIN if user_count == 0 else UserRole.ANONYMOUS            
 
             if new_user.role != UserRole.ADMIN:
                 new_user.verification_token = generate_verification_token()
+                session.add(new_user)
+                await session.commit()
                 await email_service.send_verification_email(new_user)
             else:
                 new_user.email_verified = True
-                await session.commit()  # Ensure the user is committed as verified if Admin
+                session.add(new_user)
+                await session.commit()
 
             return new_user
         except ValidationError as e:
             logger.error(f"Validation error during user creation: {e}")
             return None
-        except Exception as e:  # More specific exception handling might be needed here
-            logger.error(f"Unexpected error: {e}")
+        except SQLAlchemyError as e:
+            logger.error(f"Database error during user creation: {e}")
             await session.rollback()
             return None
+
 
     @classmethod
     async def update(cls, session: AsyncSession, user_id: UUID, update_data: Dict[str, str]) -> Optional[User]:
         try:
-            # validated_data = UserUpdate(**update_data).dict(exclude_unset=True)
             validated_data = UserUpdate(**update_data).model_dump(exclude_unset=True)
 
             if 'password' in validated_data:
@@ -181,7 +180,8 @@ class UserService:
         if user and user.verification_token == token:
             user.email_verified = True
             user.verification_token = None  # Clear the token once used
-            user.role = UserRole.AUTHENTICATED
+            
+            if user.role == UserRole.ANONYMOUS: user.role = UserRole.AUTHENTICATED # realized that if only AUTHENTICATED HERE, causing more issues if no ANONYMOUS
             session.add(user)
             await session.commit()
             return True
