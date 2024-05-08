@@ -45,6 +45,7 @@ def test_user_nickname_boundaries(nickname, user_base_data):
         with pytest.raises(ValidationError):
             UserBase(**user_base_data)
 
+
 @pytest.fixture
 def user_response_data(user_base_data):
     return {
@@ -59,6 +60,15 @@ def user_response_data(user_base_data):
         # "updated_at": datetime.now(),
         "links": []
     }
+
+# TEST 6 - Temporal Field Tests
+def test_user_temporal_fields(user_response_data):
+    now = datetime.now()
+    user_response_data.update({"last_login_at": now, "created_at": now, "updated_at": now})
+    user = UserResponse(**user_response_data)
+    assert user.last_login_at == now
+    assert user.created_at == now
+    assert user.updated_at == now
 
 @pytest.fixture
 def login_request_data():
