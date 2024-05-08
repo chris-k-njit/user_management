@@ -25,6 +25,17 @@ def user_base_data():
 def user_create_data(user_base_data):
     return {**user_base_data, "password": "SecurePassword123!"}
 
+# TEST 9 - Integration Tests with Email Service
+def test_user_registration_with_email_confirmation(user_create_data, db_session, email_service_mock):
+    user = asyncio.run(UserService.register_user(db_session, user_create_data, email_service_mock))
+    assert user is not None
+    email_service_mock.send_verification_email.assert_called_once_with(user.email)
+
+# TEST 8 - Security Tests
+def test_password_hashing_on_creation(user_create_data, db_session):
+    user = asyncio.run(UserService.create(db_session, user_create_data, None))
+    assert user.password != user_create_data["password"]  # Assuming password is hashed and therefore different
+
 @pytest.fixture
 def user_update_data():
     return {
